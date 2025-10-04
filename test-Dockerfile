@@ -1,0 +1,4 @@
+FROM alpine:latest
+LABEL test="integration"
+RUN echo "Integration test image" > /test.txt
+CMD ["cat", "/test.txt"]

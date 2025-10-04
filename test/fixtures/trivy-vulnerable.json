@@ -1,0 +1,38 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "test-app:vulnerable",
+  "ArtifactType": "container_image",
+  "Results": [
+    {
+      "Target": "test-app:vulnerable (alpine 3.16.0)",
+      "Class": "os-pkgs",
+      "Type": "alpine",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0001",
+          "PkgName": "openssl",
+          "Severity": "CRITICAL",
+          "Title": "Critical vulnerability in OpenSSL"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-0002",
+          "PkgName": "curl",
+          "Severity": "HIGH",
+          "Title": "High vulnerability in curl"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-0003",
+          "PkgName": "zlib",
+          "Severity": "HIGH",
+          "Title": "High vulnerability in zlib"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-0004",
+          "PkgName": "libxml2",
+          "Severity": "MEDIUM",
+          "Title": "Medium vulnerability in libxml2"
+        }
+      ]
+    }
+  ]
+}

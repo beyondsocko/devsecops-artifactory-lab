@@ -1,0 +1,236 @@
+
+# =============================================================================
+# DevSecOps Lab - Enhanced Portable Environment
+# =============================================================================
+# Builds on your existing Nexus setup to add portable capabilities
+# =============================================================================
+
+services:
+  # =============================================================================
+  # NEXUS REPOSITORY OSS (Your existing setup enhanced)
+  # =============================================================================
+  nexus:
+    image: sonatype/nexus3:latest
+    container_name: nexus-oss
+    ports:
+      - "8081:8081"    # Nexus Web UI
+      - "8082:8082"    # Docker Registry
+    volumes:
+      - nexus-data:/nexus-data
+      - ./scripts/nexus-init:/opt/nexus-init:ro
+    environment:
+      - INSTALL4J_ADD_VM_PARAMS=-Xms1g -Xmx1g
+      - NEXUS_SECURITY_RANDOMPASSWORD=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+    networks:
+      - devsecops-network
+
+  # =============================================================================
+  # SECURITY SCANNER SERVICE (New addition)
+  # =============================================================================
+  security-scanner:
+    build:
+      context: .
+      dockerfile: docker/scanner.Dockerfile
+    container_name: devsecops-scanner
+    volumes:
+      - ./scripts:/app/scripts:ro
+      - ./scan-results:/app/scan-results
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+      - ./policies:/app/policies:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - NEXUS_URL=http://nexus:8081
+      - NEXUS_USERNAME=admin
+      - NEXUS_PASSWORD=Aa1234567
+      - NEXUS_DOCKER_REGISTRY=nexus:8082
+      - GATE_FAIL_ON_CRITICAL=true
+      - GATE_FAIL_ON_HIGH=true
+      - GATE_MAX_CRITICAL=0
+      - GATE_MAX_HIGH=5
+    depends_on:
+      nexus:
+        condition: service_healthy
+    networks:
+      - devsecops-network
+    profiles:
+      - tools
+
+  # =============================================================================
+  # LAB INITIALIZATION (New addition)
+  # =============================================================================
+  lab-init:
+    image: curlimages/curl:latest
+    container_name: devsecops-init
+    volumes:
+      - ./scripts:/scripts:ro
+    environment:
+      - NEXUS_URL=http://nexus:8081
+      - NEXUS_USERNAME=admin
+      - NEXUS_PASSWORD=Aa1234567
+    depends_on:
+      nexus:
+        condition: service_healthy
+    networks:
+      - devsecops-network
+    profiles:
+      - init
+    command: >
+      sh -c "
+        echo 'Initializing DevSecOps Lab...';
+        echo 'Waiting for Nexus to be fully ready...';
+        sleep 30;
+        echo 'Creating repositories via API...';
+        curl -u admin:Aa1234567 -X POST 'http://nexus:8081/service/rest/v1/repositories/docker/hosted' \
+          -H 'Content-Type: application/json' \
+          -d '{
+            \"name\": \"docker-local\",
+            \"online\": true,
+            \"storage\": {
+              \"blobStoreName\": \"default\",
+              \"strictContentTypeValidation\": true,
+              \"writePolicy\": \"allow_once\"
+            },
+            \"docker\": {
+              \"v1Enabled\": false,
+              \"forceBasicAuth\": true,
+              \"httpPort\": 8082
+            }
+          }' || echo 'Docker repo may already exist';
+        curl -u admin:Aa1234567 -X POST 'http://nexus:8081/service/rest/v1/repositories/raw/hosted' \
+          -H 'Content-Type: application/json' \
+          -d '{
+            \"name\": \"raw-hosted\",
+            \"online\": true,
+            \"storage\": {
+              \"blobStoreName\": \"default\",
+              \"strictContentTypeValidation\": false,
+              \"writePolicy\": \"allow\"
+            }
+          }' || echo 'Raw repo may already exist';
+        echo 'Lab initialization complete!';
+        echo 'Nexus Web UI: http://localhost:8081 (admin/Aa1234567)';
+        echo 'Docker Registry: localhost:8082';
+      "
+
+  # =============================================================================
+  # SAMPLE APPLICATION (Your existing app containerized)
+  # =============================================================================
+  sample-app:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+      args:
+        - BUILD_DATE=${BUILD_DATE:-}
+        - VCS_REF=${VCS_REF:-docker-compose}
+        - VERSION=${VERSION:-latest}
+    container_name: devsecops-sample-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - devsecops-network
+    profiles:
+      - demo
+
+  # =============================================================================
+  # WEB DASHBOARD (New addition)
+  # =============================================================================
+  dashboard:
+    image: nginx:alpine
+    container_name: devsecops-dashboard
+    ports:
+      - "8080:80"
+    volumes:
+      - ./docs:/usr/share/nginx/html/docs:ro
+      - ./reports:/usr/share/nginx/html/reports:ro
+      - ./logs:/usr/share/nginx/html/logs:ro
+      - ./README.md:/usr/share/nginx/html/README.md:ro
+    networks:
+      - devsecops-network
+    profiles:
+      - demo
+    command: >
+      sh -c "
+        echo 'Setting up dashboard...';
+        cat > /usr/share/nginx/html/index.html << 'EOH'
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>DevSecOps Lab Dashboard</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                .header { text-align: center; margin-bottom: 40px; }
+                .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+                .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .card h3 { color: #333; margin-bottom: 15px; }
+                .card a { display: block; color: #0066cc; text-decoration: none; margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; }
+                .card a:hover { background: #e9ecef; }
+                .status { background: #28a745; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; }
+            </style>
+        </head>
+        <body>
+            <div class=\"header\">
+                <h1>🛡️ DevSecOps Lab Dashboard</h1>
+                <p>Complete Security-First CI/CD Pipeline</p>
+                <span class=\"status\">✅ Lab Active</span>
+            </div>
+            <div class=\"grid\">
+                <div class=\"card\">
+                    <h3>📋 Documentation</h3>
+                    <a href=\"README.md\">📖 Main Documentation</a>
+                    <a href=\"docs/\">📁 All Documentation</a>
+                </div>
+                <div class=\"card\">
+                    <h3>🔍 Reports & Logs</h3>
+                    <a href=\"reports/\">📊 Security Reports</a>
+                    <a href=\"logs/\">📝 Audit Logs</a>
+                </div>
+                <div class=\"card\">
+                    <h3>🔧 Lab Services</h3>
+                    <a href=\"http://localhost:8081\" target=\"_blank\">🏛️ Nexus Repository</a>
+                    <a href=\"http://localhost:3000\" target=\"_blank\">🌐 Sample Application</a>
+                </div>
+                <div class=\"card\">
+                    <h3>🧪 Quick Commands</h3>
+                    <p>Run in terminal:</p>
+                    <code>docker-compose exec security-scanner trivy image alpine:latest</code><br><br>
+                    <code>docker-compose exec security-scanner /app/scripts/security/scan.sh alpine:latest</code>
+                </div>
+            </div>
+        </body>
+        </html>
+        EOH
+        nginx -g 'daemon off;'
+      "
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  devsecops-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  nexus-data:
+    driver: local

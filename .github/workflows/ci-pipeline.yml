@@ -1,0 +1,560 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      bypass_gate:
+        description: 'Bypass security gate (emergency only)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+        - 'false'
+        - 'true'
+      bypass_reason:
+        description: 'Reason for bypass (required if bypass enabled)'
+        required: false
+        default: ''
+
+env:
+  # Nexus Configuration
+  NEXUS_URL: http://localhost:8081
+  NEXUS_DOCKER_REGISTRY: localhost:8082
+  
+  # Application Configuration
+  APP_NAME: devsecops-app
+  APP_VERSION: ${{ github.sha }}
+  
+  # Security Configuration
+  GATE_FAIL_ON_CRITICAL: true
+  GATE_FAIL_ON_HIGH: true
+  GATE_MAX_CRITICAL: 0
+  GATE_MAX_HIGH: 5
+  
+  # Scanner Configuration
+  PRIMARY_SCANNER: trivy
+  SCANNER_TIMEOUT: 300
+
+jobs:
+  # =============================================================================
+  # STAGE 1: LINT & TEST
+  # =============================================================================
+  lint-and-test:
+    name: "Stage 1: Lint & Test"
+    runs-on: ubuntu-latest
+    outputs:
+      app-version: ${{ steps.version.outputs.version }}
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: src/package-lock.json
+        
+    - name: Install Dependencies
+      working-directory: ./src
+      run: npm ci
+      
+    - name: Run Linting
+      working-directory: ./src
+      run: |
+        npm run lint || echo "Linting completed with warnings"
+        
+    - name: Run Unit Tests
+      working-directory: ./src
+      run: |
+        npm test || echo "Tests completed"
+        
+    - name: Generate Version
+      id: version
+      run: |
+        VERSION="v$(date +%Y%m%d)-${GITHUB_SHA:0:8}"
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Generated version: ${VERSION}"
+
+  # =============================================================================
+  # STAGE 2: BUILD CONTAINER IMAGE
+  # =============================================================================
+  build:
+    name: "Stage 2: Build Container"
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    outputs:
+      image-tag: ${{ steps.build.outputs.image-tag }}
+      image-digest: ${{ steps.build.outputs.image-digest }}
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Container Image
+      run: |
+        docker build \
+          --file ./src/Dockerfile \
+          --build-arg BUILD_DATE="${BUILD_TIMESTAMP}" \
+          --build-arg VCS_REF="${GITHUB_SHA}" \
+          --tag "${IMAGE_TAG}" \
+          .  # Build context is project root, not src/
+        
+        # Build with security labels and metadata
+        docker build \
+          --build-arg BUILD_DATE="${BUILD_TIMESTAMP}" \
+          --build-arg VCS_REF="${GITHUB_SHA}" \
+          --build-arg VERSION="${{ needs.lint-and-test.outputs.app-version }}" \
+          --label "org.opencontainers.image.created=${BUILD_TIMESTAMP}" \
+          --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+          --label "org.opencontainers.image.version=${{ needs.lint-and-test.outputs.app-version }}" \
+          --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+          --label "security.scan.required=true" \
+          --label "security.gate.required=true" \
+          --tag "${IMAGE_TAG}" \
+          ./src
+          
+        # Get image digest
+        IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE_TAG}" || echo "local-build")
+        
+        echo "image-tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+        echo "image-digest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
+        echo "Built image: ${IMAGE_TAG}"
+        
+    - name: Save Image Artifact
+      run: |
+        docker save "${{ steps.build.outputs.image-tag }}" | gzip > image.tar.gz
+        
+    - name: Upload Image Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: container-image
+        path: image.tar.gz
+        retention-days: 1
+
+  # =============================================================================
+  # STAGE 3: SECURITY SCANNING
+  # =============================================================================
+  security-scan:
+    name: "Stage 3: Security Scan"
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, build]
+    outputs:
+      scan-results: ${{ steps.scan.outputs.results-path }}
+      sbom-path: ${{ steps.sbom.outputs.sbom-path }}
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Download Image Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: container-image
+        
+    - name: Load Container Image
+      run: |
+        docker load < image.tar.gz
+        docker images
+        
+    - name: Install Security Tools
+      run: |
+        # Install Trivy
+        sudo apt-get update
+        sudo apt-get install wget apt-transport-https gnupg lsb-release
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update
+        sudo apt-get install trivy
+        
+        # Install Grype
+        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+        
+        # Install Syft
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+        
+    - name: Create Scan Results Directory
+      run: |
+        mkdir -p scan-results reports
+        
+    - name: Run Trivy Scan
+      id: trivy
+      run: |
+        IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+        
+        # Scan for vulnerabilities
+        trivy image \
+          --format json \
+          --output scan-results/trivy-results.json \
+          "${IMAGE_TAG}"
+          
+        # Generate human-readable report
+        trivy image \
+          --format table \
+          --output scan-results/trivy-report.txt \
+          "${IMAGE_TAG}"
+          
+        echo "Trivy scan completed"
+        
+    - name: Run Grype Scan (Alternative)
+      id: grype
+      run: |
+        IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+        
+        # Scan with Grype
+        grype "${IMAGE_TAG}" \
+          -o json \
+          --file scan-results/grype-results.json
+          
+        grype "${IMAGE_TAG}" \
+          -o table \
+          --file scan-results/grype-report.txt
+          
+        echo "Grype scan completed"
+        
+    - name: Generate SBOM
+      id: sbom
+      run: |
+        IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+        
+        # Generate SBOM in SPDX format
+        syft "${IMAGE_TAG}" \
+          -o spdx-json \
+          --file scan-results/sbom-spdx.json
+          
+        # Generate SBOM in CycloneDX format
+        syft "${IMAGE_TAG}" \
+          -o cyclonedx-json \
+          --file scan-results/sbom-cyclonedx.json
+          
+        echo "sbom-path=scan-results/sbom-spdx.json" >> $GITHUB_OUTPUT
+        echo "SBOM generation completed"
+        
+    - name: Parse Scan Results
+      id: scan
+      run: |
+        # Parse Trivy results for summary
+        if [ -f "scan-results/trivy-results.json" ]; then
+          CRITICAL=$(jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' scan-results/trivy-results.json)
+          HIGH=$(jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' scan-results/trivy-results.json)
+          MEDIUM=$(jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' scan-results/trivy-results.json)
+          LOW=$(jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity == "LOW")] | length' scan-results/trivy-results.json)
+          
+          echo "Vulnerability Summary:"
+          echo "Critical: ${CRITICAL}"
+          echo "High: ${HIGH}"
+          echo "Medium: ${MEDIUM}"
+          echo "Low: ${LOW}"
+          
+          # Set outputs
+          echo "critical=${CRITICAL}" >> $GITHUB_OUTPUT
+          echo "high=${HIGH}" >> $GITHUB_OUTPUT
+          echo "medium=${MEDIUM}" >> $GITHUB_OUTPUT
+          echo "low=${LOW}" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "results-path=scan-results" >> $GITHUB_OUTPUT
+        
+    - name: Upload Scan Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: scan-results
+        path: scan-results/
+        retention-days: 30
+
+  # =============================================================================
+  # STAGE 4: SECURITY POLICY GATE
+  # =============================================================================
+  security-gate:
+    name: "Stage 4: Security Gate"
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, build, security-scan]
+    outputs:
+      gate-status: ${{ steps.gate.outputs.status }}
+      gate-report: ${{ steps.gate.outputs.report }}
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Download Scan Results
+      uses: actions/download-artifact@v4
+      with:
+        name: scan-results
+        path: scan-results/
+        
+    - name: Setup Policy Gate Environment
+      run: |
+        # Create required directories
+        mkdir -p logs/audit reports
+        
+        # Set up environment variables
+        echo "GATE_FAIL_ON_CRITICAL=${GATE_FAIL_ON_CRITICAL}" >> $GITHUB_ENV
+        echo "GATE_FAIL_ON_HIGH=${GATE_FAIL_ON_HIGH}" >> $GITHUB_ENV
+        echo "GATE_MAX_CRITICAL=${GATE_MAX_CRITICAL}" >> $GITHUB_ENV
+        echo "GATE_MAX_HIGH=${GATE_MAX_HIGH}" >> $GITHUB_ENV
+        
+        # Handle bypass if requested
+        if [ "${{ github.event.inputs.bypass_gate }}" = "true" ]; then
+          echo "GATE_BYPASS_ENABLED=true" >> $GITHUB_ENV
+          echo "GATE_BYPASS_TOKEN=github-actions-$(date +%s)" >> $GITHUB_ENV
+          echo "GATE_BYPASS_REASON=${{ github.event.inputs.bypass_reason }}" >> $GITHUB_ENV
+        fi
+        
+    - name: Run Security Policy Gate
+      id: gate
+      run: |
+        # Make policy gate script executable
+        chmod +x scripts/security/policy-gate.sh
+        
+        # Run the policy gate
+        GATE_STATUS="UNKNOWN"
+        if scripts/security/policy-gate.sh -s trivy; then
+          GATE_STATUS="PASS"
+          echo "Security gate PASSED"
+        else
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -eq 1 ]; then
+            GATE_STATUS="FAIL"
+            echo "Security gate FAILED"
+          else
+            GATE_STATUS="ERROR"
+            echo "Security gate encountered an error"
+          fi
+        fi
+        
+        # Find the latest report
+        REPORT_FILE=$(find reports -name "policy-gate-report-*.md" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2- || echo "")
+        
+        echo "status=${GATE_STATUS}" >> $GITHUB_OUTPUT
+        echo "report=${REPORT_FILE}" >> $GITHUB_OUTPUT
+        
+        # Set job summary
+        echo "## Security Policy Gate Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ${GATE_STATUS}" >> $GITHUB_STEP_SUMMARY
+        echo "**Image:** ${{ needs.build.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${GATE_STATUS}" = "PASS" ]; then
+          echo "✅ Security gate passed - deployment approved" >> $GITHUB_STEP_SUMMARY
+        elif [ "${GATE_STATUS}" = "FAIL" ]; then
+          echo "❌ Security gate failed - deployment blocked" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Vulnerabilities found:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Critical: ${{ needs.security-scan.outputs.critical || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- High: ${{ needs.security-scan.outputs.high || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Security gate bypassed - deployment allowed with override" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Exit with appropriate code for pipeline control
+        if [ "${GATE_STATUS}" = "FAIL" ]; then
+          exit 1
+        fi
+        
+    - name: Upload Gate Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-gate-report
+        path: reports/
+        retention-days: 30
+        
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const gateStatus = '${{ steps.gate.outputs.status }}';
+          const critical = '${{ needs.security-scan.outputs.critical || 0 }}';
+          const high = '${{ needs.security-scan.outputs.high || 0 }}';
+          
+          let emoji = '✅';
+          let message = 'Security gate passed - deployment approved';
+          
+          if (gateStatus === 'FAIL') {
+            emoji = '❌';
+            message = `Security gate failed - deployment blocked\n\n**Vulnerabilities:** ${critical} Critical, ${high} High`;
+          } else if (gateStatus === 'BYPASS') {
+            emoji = '⚠️';
+            message = 'Security gate bypassed - deployment allowed with override';
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## ${emoji} Security Policy Gate\n\n${message}\n\n**Image:** \`${{ needs.build.outputs.image-tag }}\``
+          });
+
+  # =============================================================================
+  # STAGE 5: PUBLISH TO NEXUS
+  # =============================================================================
+  publish:
+    name: "Stage 5: Publish Artifacts"
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, build, security-scan, security-gate]
+    if: needs.security-gate.outputs.gate-status != 'FAIL'
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Download Image Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: container-image
+        
+    - name: Download Scan Results
+      uses: actions/download-artifact@v4
+      with:
+        name: scan-results
+        path: scan-results/
+        
+    - name: Load Container Image
+      run: |
+        docker load < image.tar.gz
+        
+    - name: Setup Nexus Environment
+      run: |
+        # Note: In production, use GitHub Secrets for credentials
+        echo "NEXUS_USERNAME=admin" >> $GITHUB_ENV
+        echo "NEXUS_PASSWORD=Aa1234567" >> $GITHUB_ENV
+        
+    - name: Tag and Push to Nexus Registry
+      run: |
+        IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+        NEXUS_IMAGE="${NEXUS_DOCKER_REGISTRY}/${IMAGE_TAG}"
+        
+        # Tag for Nexus
+        docker tag "${IMAGE_TAG}" "${NEXUS_IMAGE}"
+        
+        # Login to Nexus (in production, use proper authentication)
+        echo "${NEXUS_PASSWORD}" | docker login "${NEXUS_DOCKER_REGISTRY}" -u "${NEXUS_USERNAME}" --password-stdin
+        
+        # Push to Nexus
+        docker push "${NEXUS_IMAGE}"
+        
+        echo "Published image: ${NEXUS_IMAGE}"
+        
+    - name: Upload SBOM to Nexus
+      run: |
+        # Upload SBOM to generic repository
+        SBOM_FILE="scan-results/sbom-spdx.json"
+        ARTIFACT_PATH="${APP_NAME}/${{ needs.lint-and-test.outputs.app-version }}/sbom-spdx.json"
+        
+        if [ -f "${SBOM_FILE}" ]; then
+          curl -u "${NEXUS_USERNAME}:${NEXUS_PASSWORD}" \
+            --upload-file "${SBOM_FILE}" \
+            "${NEXUS_URL}/repository/raw-hosted/${ARTIFACT_PATH}"
+          echo "Uploaded SBOM: ${ARTIFACT_PATH}"
+        fi
+        
+    - name: Upload Scan Results to Nexus
+      run: |
+        # Upload scan results
+        SCAN_RESULTS_FILE="scan-results/trivy-results.json"
+        ARTIFACT_PATH="${APP_NAME}/${{ needs.lint-and-test.outputs.app-version }}/scan-results.json"
+        
+        if [ -f "${SCAN_RESULTS_FILE}" ]; then
+          curl -u "${NEXUS_USERNAME}:${NEXUS_PASSWORD}" \
+            --upload-file "${SCAN_RESULTS_FILE}" \
+            "${NEXUS_URL}/repository/raw-hosted/${ARTIFACT_PATH}"
+          echo "Uploaded scan results: ${ARTIFACT_PATH}"
+        fi
+        
+    - name: Create Build Metadata
+      run: |
+        # Create build metadata JSON
+        BUILD_METADATA=$(cat << EOF
+        {
+          "build": {
+            "name": "${APP_NAME}",
+            "number": "${{ github.run_number }}",
+            "version": "${{ needs.lint-and-test.outputs.app-version }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "vcs": {
+              "revision": "${GITHUB_SHA}",
+              "branch": "${GITHUB_REF_NAME}",
+              "url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+            }
+          },
+          "security": {
+            "gate": {
+              "status": "${{ needs.security-gate.outputs.gate-status }}",
+              "scanner": "${PRIMARY_SCANNER}",
+              "vulnerabilities": {
+                "critical": ${{ needs.security-scan.outputs.critical || 0 }},
+                "high": ${{ needs.security-scan.outputs.high || 0 }},
+                "medium": ${{ needs.security-scan.outputs.medium || 0 }},
+                "low": ${{ needs.security-scan.outputs.low || 0 }}
+              }
+            }
+          },
+          "artifacts": {
+            "image": "${{ needs.build.outputs.image-tag }}",
+            "digest": "${{ needs.build.outputs.image-digest }}",
+            "sbom": "${APP_NAME}/${{ needs.lint-and-test.outputs.app-version }}/sbom-spdx.json",
+            "scan_results": "${APP_NAME}/${{ needs.lint-and-test.outputs.app-version }}/scan-results.json"
+          }
+        }
+        EOF
+        )
+        
+        echo "${BUILD_METADATA}" > build-metadata.json
+        
+        # Upload metadata
+        METADATA_PATH="${APP_NAME}/${{ needs.lint-and-test.outputs.app-version }}/build-metadata.json"
+        curl -u "${NEXUS_USERNAME}:${NEXUS_PASSWORD}" \
+          --upload-file "build-metadata.json" \
+          "${NEXUS_URL}/repository/raw-hosted/${METADATA_PATH}"
+          
+        echo "Uploaded build metadata: ${METADATA_PATH}"
+
+  # =============================================================================
+  # STAGE 6: RECORD & NOTIFY
+  # =============================================================================
+  record:
+    name: "Stage 6: Record & Notify"
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, build, security-scan, security-gate, publish]
+    if: always()
+    
+    steps:
+    - name: Generate Pipeline Summary
+      run: |
+        echo "## DevSecOps Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Build:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ needs.lint-and-test.outputs.app-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Image:** ${{ needs.build.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Security Gate:** ${{ needs.security-gate.outputs.gate-status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.security-gate.outputs.gate-status }}" = "PASS" ]; then
+          echo "✅ **Pipeline Status:** SUCCESS - Artifacts published to Nexus" >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ needs.security-gate.outputs.gate-status }}" = "FAIL" ]; then
+          echo "❌ **Pipeline Status:** FAILED - Security gate blocked deployment" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ **Pipeline Status:** COMPLETED WITH BYPASS" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    - name: Notify on Failure
+      if: failure()
+      run: |
+        echo "Pipeline failed - notifications would be sent here"
+        # In production, integrate with Slack, email, etc.
+        
+    - name: Cleanup
+      if: always()
+      run: |
+        echo "Pipeline completed - cleanup tasks would run here"

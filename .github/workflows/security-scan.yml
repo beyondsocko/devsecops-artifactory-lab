@@ -1,0 +1,48 @@
+name: Security Scan Only
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: 'Image to scan'
+        required: true
+        default: 'localhost:8082/devsecops-app:latest'
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Install Security Tools
+      run: |
+        # Install Trivy
+        sudo apt-get update
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update
+        sudo apt-get install trivy
+        
+    - name: Scan Image
+      run: |
+        IMAGE_NAME="${{ github.event.inputs.image_name || 'localhost:8082/devsecops-app:latest' }}"
+        
+        # Create results directory
+        mkdir -p scan-results
+        
+        # Note: This would need access to your Nexus registry
+        # For demo purposes, we'll scan a public image
+        trivy image --format json --output scan-results/trivy-results.json alpine:latest
+        trivy image --format table alpine:latest
+        
+    - name: Upload Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-scan-results
+        path: scan-results/
+        retention-days: 30
