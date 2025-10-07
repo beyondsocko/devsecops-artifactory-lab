@@ -1,8 +1,15 @@
 # Multi-stage production Dockerfile
-FROM node:18-alpine AS builder
+FROM ubuntu:22.04 AS builder
 
 LABEL stage="builder"
 LABEL description="DevSecOps Lab - Build Stage"
+
+# Install Node.js 18
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -16,7 +23,14 @@ RUN npm install --only=production
 COPY src/ .
 
 # Production stage
-FROM node:18-alpine AS production
+FROM ubuntu:22.04 AS production
+
+# Install Node.js 18
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Comprehensive metadata labels
 LABEL maintainer="DevSecOps Lab"
@@ -33,14 +47,14 @@ LABEL build.number="$BUILD_NUMBER"
 LABEL build.vcs.revision="$VCS_REVISION"
 LABEL build.timestamp="$BUILD_TIMESTAMP"
 
-# Install security updates
-RUN apk update && apk upgrade && \
-    apk add --no-cache dumb-init curl && \
-    rm -rf /var/cache/apk/*
+# Install additional security packages (Node.js already installed above)
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends dumb-init && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 -G nodejs
+# Create non-root user with home directory
+RUN groupadd -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs -m -s /bin/bash nodejs
 
 WORKDIR /app
 RUN chown -R nodejs:nodejs /app
