@@ -1,0 +1,42 @@
+# =============================================================================
+# TERRAFORM VARIABLES EXAMPLE
+# =============================================================================
+# Purpose: Example configuration file showing how to customize the deployment
+# Copy this file to terraform.tfvars and modify values as needed
+
+# Nexus Configuration
+nexus_admin_password = "Aa1234567"
+nexus_web_port      = 8081
+nexus_registry_port = 8082
+nexus_memory        = 2048
+
+# Environment Configuration
+project_environment = "development"
+
+# Security Tools
+enable_security_scanning = true
+
+# Container Management
+auto_start_containers = true
+
+# =============================================================================
+# CUSTOMIZATION EXAMPLES
+# =============================================================================
+
+# Production Environment Example:
+# project_environment = "production"
+# nexus_memory = 4096
+# nexus_admin_password = "your-secure-password-here"
+
+# Development Environment Example:
+# project_environment = "development"
+# nexus_memory = 1024
+# enable_security_scanning = false
+
+# Custom Port Configuration:
+# nexus_web_port = 9081
+# nexus_registry_port = 9082
+
+# Security-Focused Configuration:
+# enable_security_scanning = true
+# nexus_memory = 3072
