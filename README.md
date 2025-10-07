@@ -15,6 +15,7 @@
 This lab demonstrates enterprise-grade DevSecOps practices using 100% free and open-source tools:
 
 - **Repository Management**: Nexus Repository OSS
+- **Infrastructure as Code**: Complete Terraform deployment automation
 - **Security Scanning**: Trivy, Grype, Syft
 - **Policy Enforcement**: Custom security gates with bypass controls
 - **CI/CD Integration**: GitHub Actions with 6-stage pipeline
@@ -37,6 +38,7 @@ Developer → GitHub → CI/CD Pipeline → Security Gates → Nexus Repository 
 - Docker Desktop with WSL2 (Windows) or Docker (Linux/Mac)
 - Node.js 18+ and npm
 - Git
+- Terraform (optional, for Infrastructure as Code)
 - 8GB RAM, 20GB disk space
 
 ### 1. Clone and Setup
@@ -70,6 +72,18 @@ docker run -d -p 8081:8081 -p 8082:8082 \
 
 # Run integrated security pipeline
 ./scripts/security/integrate-gate.sh localhost:8082/devsecops-app:latest
+```
+
+### 4. Infrastructure as Code (Optional)
+```bash
+# Deploy with Terraform
+cd terraform
+terraform init
+terraform plan
+terraform apply
+
+# Access deployed services
+terraform output
 ```
 
 ## 📋 Implementation Phases
@@ -119,6 +133,13 @@ docker run -d -p 8081:8081 -p 8082:8082 \
 - Acceptance criteria validation
 - Performance and security benchmarks
 
+### ✅ Phase 9: Infrastructure as Code
+- Complete Terraform configuration (8 files)
+- Automated Nexus deployment with Docker provider
+- Network isolation and security controls
+- Multi-environment support with variables
+- Production-ready infrastructure patterns
+
 ## 🛡️ Security Features
 
 ### Vulnerability Scanning
@@ -142,6 +163,14 @@ GATE_BYPASS_ENABLED: true      # Emergency override
 - Vulnerability report archival
 - Policy bypass documentation
 
+### Infrastructure as Code
+- **Terraform Configuration**: 8 comprehensive configuration files
+- **Network Isolation**: Custom Docker networks with subnet management
+- **Service Deployment**: Automated Nexus and security tools deployment
+- **Multi-Environment**: Development, staging, production configurations
+- **Resource Management**: Persistent volumes, health checks, monitoring
+- **Documentation**: Self-documenting infrastructure with examples
+
 ## 🔧 Configuration
 
 ### Environment Variables (.env)
@@ -160,6 +189,20 @@ GATE_BYPASS_ENABLED=true
 # Scanner Configuration
 PRIMARY_SCANNER=trivy
 SCANNER_TIMEOUT=300
+```
+
+### Terraform Variables (terraform/terraform.tfvars)
+```hcl
+# Infrastructure Configuration
+nexus_admin_password = "Aa1234567"
+nexus_web_port      = 8081
+nexus_registry_port = 8082
+nexus_memory        = 2048
+
+# Environment Settings
+project_environment = "development"
+enable_security_scanning = true
+auto_start_containers = true
 ```
 
 ### GitHub Secrets (for CI/CD)
@@ -192,6 +235,25 @@ SCANNER_TIMEOUT=300
 
 # Query artifacts
 ./scripts/api/query-artifacts.sh --build-name myapp
+```
+
+### Infrastructure as Code Operations
+```bash
+# Initialize Terraform
+cd terraform
+terraform init
+
+# Plan deployment
+terraform plan
+
+# Deploy infrastructure
+terraform apply
+
+# Get connection information
+terraform output
+
+# Destroy infrastructure
+terraform destroy
 ```
 
 ### CI/CD Pipeline
