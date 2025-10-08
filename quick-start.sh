@@ -95,6 +95,33 @@ check_prerequisites() {
 setup_minimal_portable() {
     log_step "Setting up minimal portable environment..."
     
+    # Create .env file if it doesn't exist
+    if [[ ! -f ".env" ]]; then
+        if [[ -f ".env.example" ]]; then
+            cp .env.example .env
+            log_info "Created .env file from .env.example"
+        else
+            # Create basic .env file
+            cat > .env << 'EOF'
+# Nexus Repository Configuration
+NEXUS_URL=http://localhost:8081
+NEXUS_USERNAME=admin
+NEXUS_PASSWORD=Aa1234567
+
+# Repository Names
+DOCKER_REPO=docker-hosted
+MAVEN_REPO=maven-public
+RAW_REPO=raw-hosted
+
+# Security Settings
+SECURITY_GATE_CRITICAL=true
+SECURITY_GATE_HIGH=true
+SECURITY_GATE_MEDIUM=false
+EOF
+            log_info "Created .env file with default configuration"
+        fi
+    fi
+    
     # Create docker directory if needed
     if [[ ! -d "docker" ]]; then
         mkdir docker

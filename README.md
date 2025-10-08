@@ -32,7 +32,7 @@ Developer → GitHub → CI/CD Pipeline → Security Gates → Nexus Repository 
                    [Trivy/Grype/Syft] → [Policy Evaluation] → [Pass/Fail/Bypass]
 ```
 
-## 🚀 Quick Start (15-minute setup)
+## 🚀 Quick Start (25-minute setup)
 
 ### Prerequisites
 - Docker Desktop with WSL2 (Windows) or Docker (Linux/Mac)
@@ -40,6 +40,21 @@ Developer → GitHub → CI/CD Pipeline → Security Gates → Nexus Repository 
 - Git
 - Terraform (optional, for Infrastructure as Code)
 - 8GB RAM, 20GB disk space
+
+### Node.js Installation (Ubuntu/WSL)
+If you encounter Node.js/npm dependency conflicts:
+```bash
+# Remove conflicting packages
+sudo apt remove --purge nodejs npm
+
+# Install via NodeSource (recommended)
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verify installation
+node --version
+npm --version
+```
 
 ### 1. Clone and Setup
 ```bash
@@ -349,6 +364,46 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Grype & Syft** - Anchore
 - **GitHub Actions** - Microsoft
 - **Docker** - Docker Inc.
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+**Node.js/npm Dependency Conflicts**
+```bash
+# Solution: Use NodeSource installation
+sudo apt remove --purge nodejs npm
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+**Missing .env File**
+```bash
+# Solution: Create .env file manually
+cp .env.example .env
+# Or let quick-start.sh create it automatically
+```
+
+**Repository Creation Failed**
+```bash
+# Check Nexus is running
+curl -u admin:Aa1234567 http://localhost:8081/service/rest/v1/status
+
+# Recreate repositories
+./scripts/api/create-repos.sh
+```
+
+**Security Gate Failures**
+```bash
+# Check scan results exist
+ls -la scan-results/
+
+# Run scan manually
+trivy image --format json --output scan-results/trivy-results.json alpine:latest
+
+# Test policy gate
+./scripts/security/policy-gate.sh -s trivy
+```
 
 ## 🤝 Contributing
 

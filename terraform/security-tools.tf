@@ -85,7 +85,7 @@ resource "docker_container" "security_scanner" {
   image = docker_image.trivy[0].image_id
   
   # Keep container running for on-demand scans
-  command = ["tail", "-f", "/dev/null"]
+  command = ["sleep", "infinity"]
   
   restart = var.auto_start_containers ? "unless-stopped" : "no"
   

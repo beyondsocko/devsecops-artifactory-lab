@@ -83,11 +83,11 @@ resource "docker_container" "nexus" {
   
   # Health check
   healthcheck {
-    test         = ["CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status"]
+    test         = ["CMD", "curl", "-f", "http://localhost:8081/"]
     interval     = "30s"
     timeout      = "10s"
-    start_period = "60s"
-    retries      = 3
+    start_period = "120s"
+    retries      = 5
   }
   
   # Container labels
