@@ -405,6 +405,52 @@ trivy image --format json --output scan-results/trivy-results.json alpine:latest
 ./scripts/security/policy-gate.sh -s trivy
 ```
 
+## 🧪 Testing & Validation
+
+### Comprehensive Test Suite
+```bash
+# Run complete test suite (all components)
+./test-comprehensive.sh
+
+# Run Terraform-specific tests
+./test-terraform.sh
+
+# Test individual components
+./scripts/test-integration.sh
+```
+
+### Test Categories
+
+**Prerequisites Testing:**
+- Docker installation and daemon
+- Node.js 18+ and npm
+- Git and Terraform availability
+- Security tools accessibility
+
+**Infrastructure Testing:**
+- Project structure validation
+- Docker Compose configuration
+- Terraform configuration validation
+- Network and volume creation
+
+**Functional Testing:**
+- Service connectivity (Nexus web/API)
+- Repository creation and management
+- Security scanning integration
+- CI pipeline simulation
+
+**Integration Testing:**
+- End-to-end pipeline execution
+- Data persistence validation
+- Multi-environment compatibility
+
+### Expected Results
+
+**Excellent (90%+):** Production-ready deployment
+**Good (75-89%):** Minor issues to address
+**Fair (50-74%):** Several improvements needed
+**Needs Work (<50%):** Major issues to resolve
+
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
