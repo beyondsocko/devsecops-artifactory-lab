@@ -1,0 +1,26 @@
+{
+  "name": "devsecops-artifactory-lab",
+  "version": "1.0.0",
+  "description": "DevSecOps pipeline with Nexus Repository and security scanning",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "test": "cd src && npm test",
+    "build": "docker build -f src/Dockerfile -t devsecops-app .",
+    "scan": "trivy image devsecops-app:latest",
+    "terraform": "cd terraform && terraform apply -auto-approve",
+    "terraform-destroy": "cd terraform && terraform destroy -auto-approve",
+    "test-all": "./test-comprehensive.sh",
+    "test-terraform": "./test-terraform.sh",
+    "simulate-ci": "./scripts/simulate-ci.sh",
+    "simulate-ci-quiet": "./scripts/simulate-ci-quiet.sh",
+    "quick-start": "./quick-start.sh"
+  },
+  "keywords": ["devsecops", "security", "nexus", "terraform", "docker", "trivy", "infrastructure-as-code"],
+  "author": "DevSecOps Lab",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/devsecops-artifactory-lab.git"
+  }
+}

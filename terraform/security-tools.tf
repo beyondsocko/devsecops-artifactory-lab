@@ -84,10 +84,17 @@ resource "docker_container" "security_scanner" {
   name  = "${local.project_name}-security-scanner"
   image = docker_image.trivy[0].image_id
   
-  # Keep container running for on-demand scans
+  # Keep container running for on-demand scans (simplified)
   command = ["sleep", "infinity"]
   
   restart = var.auto_start_containers ? "unless-stopped" : "no"
+  
+  # Set working directory
+  working_dir = "/tmp"
+  
+  # Add memory and CPU limits to prevent resource issues
+  memory = 512
+  memory_swap = 1024
   
   # Mount Docker socket for image scanning
   volumes {
@@ -112,8 +119,18 @@ resource "docker_container" "security_scanner" {
   # Environment variables for scanning
   env = [
     "TRIVY_CACHE_DIR=/root/.cache/trivy",
-    "TRIVY_DB_REPOSITORY=ghcr.io/aquasecurity/trivy-db:2"
+    "TRIVY_DB_REPOSITORY=ghcr.io/aquasecurity/trivy-db:2",
+    "TRIVY_QUIET=true"
   ]
+  
+  # Simple health check
+  healthcheck {
+    test         = ["CMD", "sh", "-c", "echo 'healthy'"]
+    interval     = "30s"
+    timeout      = "5s"
+    start_period = "10s"
+    retries      = 3
+  }
   
   labels {
     label = "project"

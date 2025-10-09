@@ -51,10 +51,18 @@ if [ -d "${PROJECT_ROOT}/src" ]; then
     cd "${PROJECT_ROOT}/src"
     if [ -f "package.json" ]; then
         log_info "Installing dependencies..."
-        npm install || log_warn "npm install failed or not needed"
+        if npm install --silent > /dev/null 2>&1; then
+            log_success "Dependencies installed"
+        else
+            log_warn "npm install failed or not needed"
+        fi
         
         log_info "Running tests..."
-        npm test || log_warn "Tests failed or not configured"
+        if npm test 2>&1; then
+            log_success "Tests passed"
+        else
+            log_warn "Tests failed or not configured"
+        fi
     fi
     cd "${PROJECT_ROOT}"
 else
@@ -68,7 +76,8 @@ if [ -f "${PROJECT_ROOT}/src/Dockerfile" ]; then
     log_info "Build context: ${PROJECT_ROOT}"
     log_info "Dockerfile: ${PROJECT_ROOT}/src/Dockerfile"
     
-    # Build from project root with Dockerfile in src/
+    # Build from project root with Dockerfile in src/ (quiet mode)
+    log_info "Building container image (this may take a moment)..."
     docker build \
         --file "${PROJECT_ROOT}/src/Dockerfile" \
         --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
@@ -78,7 +87,8 @@ if [ -f "${PROJECT_ROOT}/src/Dockerfile" ]; then
         --label "org.opencontainers.image.version=${APP_VERSION}" \
         --label "security.scan.required=true" \
         --tag "${IMAGE_TAG}" \
-        "${PROJECT_ROOT}"
+        --quiet \
+        "${PROJECT_ROOT}" > /dev/null
         
     if [ $? -eq 0 ]; then
         log_success "Container built: ${IMAGE_TAG}"
@@ -112,17 +122,45 @@ fi
 
 # Stage 3: Security Scan
 log_info "Stage 3: Security Scan"
+mkdir -p "${PROJECT_ROOT}/scan-results"
+
+# Use local Trivy (more reliable than containerized version)
 if command -v trivy &> /dev/null; then
-    mkdir -p "${PROJECT_ROOT}/scan-results"
+    log_info "Using local Trivy scanner (recommended)..."
     
-    log_info "Running Trivy scan..."
-    trivy image --format json --output "${PROJECT_ROOT}/scan-results/trivy-results.json" "${IMAGE_TAG}"
-    trivy image --format table "${IMAGE_TAG}"
+    # Generate JSON report (silent)
+    trivy image --format json --output "${PROJECT_ROOT}/scan-results/trivy-results.json" "${IMAGE_TAG}" --quiet
+    
+    # Generate concise summary
+    log_info "Generating security scan summary..."
+    trivy image --format table --severity CRITICAL,HIGH "${IMAGE_TAG}" --quiet | head -20
+    
+    # Parse and show vulnerability counts
+    if [[ -f "${PROJECT_ROOT}/scan-results/trivy-results.json" ]]; then
+        critical=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "${PROJECT_ROOT}/scan-results/trivy-results.json" 2>/dev/null || echo "0")
+        high=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' "${PROJECT_ROOT}/scan-results/trivy-results.json" 2>/dev/null || echo "0")
+        medium=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' "${PROJECT_ROOT}/scan-results/trivy-results.json" 2>/dev/null || echo "0")
+        low=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "LOW")] | length' "${PROJECT_ROOT}/scan-results/trivy-results.json" 2>/dev/null || echo "0")
+        
+        log_info "📊 Vulnerability Summary: Critical: ${critical}, High: ${high}, Medium: ${medium}, Low: ${low}"
+        log_info "📄 Full report saved to: scan-results/trivy-results.json"
+    fi
     
     log_success "Security scan completed"
 else
-    log_warn "Trivy not installed, skipping security scan"
-    log_info "Install Trivy: https://aquasecurity.github.io/trivy/latest/getting-started/installation/"
+    # Fallback to containerized if local not available
+    if docker ps | grep -q "devsecops-lab-security-scanner.*Up" && ! docker ps | grep -q "devsecops-lab-security-scanner.*Restarting"; then
+        log_info "Using containerized Trivy scanner..."
+        if "${PROJECT_ROOT}/scripts/security/scan-containerized.sh" scan "${IMAGE_TAG}" "${PROJECT_ROOT}/scan-results"; then
+            log_success "Containerized security scan completed"
+        else
+            log_warn "Containerized scan failed"
+        fi
+    else
+        log_warn "No security scanner available"
+        log_info "Install Trivy: https://aquasecurity.github.io/trivy/latest/getting-started/installation/"
+        log_info "Or enable containerized scanning: terraform apply -var='enable_security_scanning=true'"
+    fi
 fi
 
 # Stage 4: Security Gate
