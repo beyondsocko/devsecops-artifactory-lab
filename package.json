@@ -14,7 +14,12 @@
     "test-terraform": "./test-terraform.sh",
     "simulate-ci": "./scripts/simulate-ci.sh",
     "simulate-ci-quiet": "./scripts/simulate-ci-quiet.sh",
-    "quick-start": "./quick-start.sh"
+    "quick-start": "./quick-start.sh",
+    "demo-vulnerable": "./scripts/demo-toggle.sh vulnerable",
+    "demo-secure": "./scripts/demo-toggle.sh secure",
+    "demo-pipeline": "./scripts/demo-toggle.sh pipeline",
+    "demo-status": "./scripts/demo-toggle.sh status",
+    "demo-restore": "./scripts/demo-toggle.sh restore"
   },
   "keywords": ["devsecops", "security", "nexus", "terraform", "docker", "trivy", "infrastructure-as-code"],
   "author": "DevSecOps Lab",

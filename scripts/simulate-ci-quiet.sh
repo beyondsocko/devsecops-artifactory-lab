@@ -86,8 +86,9 @@ mkdir -p "${PROJECT_ROOT}/scan-results"
 if command -v trivy &> /dev/null; then
     echo "  🔍 Scanning with Trivy..."
     
-    # Generate JSON report silently
-    if trivy image --format json --output "${PROJECT_ROOT}/scan-results/trivy-results.json" "${IMAGE_TAG}" --quiet > /dev/null 2>&1; then
+    # Generate JSON report silently (extra quiet for demos)
+    echo "  🔍 Scanning for vulnerabilities..."
+    if trivy image --format json --output "${PROJECT_ROOT}/scan-results/trivy-results.json" "${IMAGE_TAG}" --quiet --no-progress > /dev/null 2>&1; then
         # Parse vulnerability counts
         if [[ -f "${PROJECT_ROOT}/scan-results/trivy-results.json" ]]; then
             critical=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "${PROJECT_ROOT}/scan-results/trivy-results.json" 2>/dev/null || echo "0")
@@ -95,7 +96,7 @@ if command -v trivy &> /dev/null; then
             medium=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' "${PROJECT_ROOT}/scan-results/trivy-results.json" 2>/dev/null || echo "0")
             low=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "LOW")] | length' "${PROJECT_ROOT}/scan-results/trivy-results.json" 2>/dev/null || echo "0")
             
-            echo "  📊 Vulnerabilities: Critical: ${critical}, High: ${high}, Medium: ${medium}, Low: ${low}"
+            echo "  📊 Found: Critical: ${critical}, High: ${high}, Medium: ${medium}, Low: ${low}"
             echo "  ✅ Security scan completed"
         else
             echo "  ⚠️  Scan completed but no results file"
@@ -110,7 +111,20 @@ fi
 # Stage 4: Security Gate
 echo
 echo "🚪 Stage 4: Security Policy Gate"
-if [ -f "${PROJECT_ROOT}/scripts/security/policy-gate.sh" ]; then
+
+# Check if we're in demo mode
+if [ -f "${PROJECT_ROOT}/.env.demo" ]; then
+    echo "  🎭 Using demo policy (strict thresholds)"
+    chmod +x "${PROJECT_ROOT}/scripts/demo-policy-strict.sh"
+    
+    if "${PROJECT_ROOT}/scripts/demo-policy-strict.sh"; then
+        GATE_STATUS="PASS"
+        echo "  ✅ Security gate PASSED"
+    else
+        GATE_STATUS="FAIL"
+        echo "  ❌ Security gate FAILED"
+    fi
+elif [ -f "${PROJECT_ROOT}/scripts/security/policy-gate.sh" ]; then
     chmod +x "${PROJECT_ROOT}/scripts/security/policy-gate.sh"
     
     if "${PROJECT_ROOT}/scripts/security/policy-gate.sh" -s trivy > /dev/null 2>&1; then
