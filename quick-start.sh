@@ -452,6 +452,16 @@ main() {
     
     if [[ "${clean}" == "true" ]]; then
         log_step "Cleaning up lab environment..."
+        
+        # Set COMPOSE_CMD for cleanup
+        if command -v docker-compose &> /dev/null; then
+            COMPOSE_CMD="docker-compose"
+        elif docker compose version &> /dev/null 2>&1; then
+            COMPOSE_CMD="docker compose"
+        else
+            COMPOSE_CMD="docker-compose"  # fallback
+        fi
+        
         ${COMPOSE_CMD} down
         if [[ -f "docker-compose.override.yml" ]]; then
             rm docker-compose.override.yml
