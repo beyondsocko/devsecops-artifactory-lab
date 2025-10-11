@@ -427,7 +427,7 @@ jobs:
       run: |
         # Note: In production, use GitHub Secrets for credentials
         echo "NEXUS_USERNAME=admin" >> $GITHUB_ENV
-        echo "NEXUS_PASSWORD=Aa1234567" >> $GITHUB_ENV
+        echo "NEXUS_PASSWORD=DevSecOps2024!" >> $GITHUB_ENV
         
     - name: Tag and Push to Nexus Registry
       run: |

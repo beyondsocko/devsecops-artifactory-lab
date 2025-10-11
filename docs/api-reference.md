@@ -58,7 +58,7 @@ PUT /repository/raw-hosted/{path}
 Content-Type: application/octet-stream
 
 # Upload file
-curl -u admin:password \
+curl -u admin:DevSecOps2024! \
   --upload-file artifact.jar \
   http://localhost:8081/repository/raw-hosted/com/example/artifact/1.0/artifact.jar
 ```
@@ -66,12 +66,12 @@ curl -u admin:password \
 #### Upload with Metadata
 ```bash
 # Upload artifact
-curl -u admin:password \
+curl -u admin:DevSecOps2024! \
   --upload-file artifact.jar \
   http://localhost:8081/repository/raw-hosted/path/artifact.jar
 
 # Upload metadata companion file
-curl -u admin:password \
+curl -u admin:DevSecOps2024! \
   --upload-file metadata.json \
   http://localhost:8081/repository/raw-hosted/path/artifact.jar.metadata.json
 ```
@@ -271,7 +271,7 @@ Main configuration file for all scripts.
 # Nexus Configuration
 NEXUS_URL=http://localhost:8081
 NEXUS_USERNAME=admin
-NEXUS_PASSWORD=Aa1234567
+NEXUS_PASSWORD=DevSecOps2024!
 NEXUS_DOCKER_REGISTRY=localhost:8082
 
 # Security Gate Configuration

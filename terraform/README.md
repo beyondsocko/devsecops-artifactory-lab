@@ -73,7 +73,7 @@ terraform output
 # Access Nexus web interface
 open http://localhost:8081
 
-# Login: admin / Aa1234567 (or your configured password)
+# Login: admin / DevSecOps2024! (or your configured password)
 ```
 
 ## 🔧 Customization Options

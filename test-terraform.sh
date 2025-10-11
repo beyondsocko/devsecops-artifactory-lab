@@ -127,7 +127,7 @@ test_service_connectivity() {
     local max_attempts=5
     
     while [[ $api_attempts -lt $max_attempts ]]; do
-        if curl -s -m 5 -u admin:Aa1234567 http://localhost:8081/service/rest/v1/repositories &> /dev/null; then
+        if curl -s -m 5 -u admin:DevSecOps2024! http://localhost:8081/service/rest/v1/repositories &> /dev/null; then
             pass_test "Nexus REST API accessible"
             break
         fi
@@ -196,13 +196,13 @@ test_repository_creation() {
         pass_test "Repository creation script successful"
         
         # Verify repositories exist
-        if curl -s -u admin:Aa1234567 http://localhost:8081/service/rest/v1/repositories | jq -e '.[] | select(.name=="docker-hosted")' &> /dev/null; then
+        if curl -s -u admin:DevSecOps2024! http://localhost:8081/service/rest/v1/repositories | jq -e '.[] | select(.name=="docker-hosted")' &> /dev/null; then
             pass_test "Docker repository created"
         else
             fail_test "Docker repository not found"
         fi
         
-        if curl -s -u admin:Aa1234567 http://localhost:8081/service/rest/v1/repositories | jq -e '.[] | select(.name=="raw-hosted")' &> /dev/null; then
+        if curl -s -u admin:DevSecOps2024! http://localhost:8081/service/rest/v1/repositories | jq -e '.[] | select(.name=="raw-hosted")' &> /dev/null; then
             pass_test "Raw repository created"
         else
             fail_test "Raw repository not found"

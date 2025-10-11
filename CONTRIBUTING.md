@@ -85,7 +85,7 @@ Thank you for your interest in contributing to this DevSecOps laboratory! This p
 
 ### Security Considerations
 - **Never commit secrets** or real credentials
-- **Use demo/example credentials** only (current: admin/Aa1234567)
+- **Use demo/example credentials** only (current: admin/DevSecOps2024!)
 - **Validate security tools** before adding them
 - **Test security policies** thoroughly
 

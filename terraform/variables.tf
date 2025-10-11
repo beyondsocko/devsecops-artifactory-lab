@@ -7,7 +7,7 @@
 variable "nexus_admin_password" {
   description = "Admin password for Nexus Repository"
   type        = string
-  default     = "Aa1234567"
+  default     = "DevSecOps2024!"
   sensitive   = true
 }
 

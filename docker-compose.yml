@@ -49,7 +49,7 @@ services:
     environment:
       - NEXUS_URL=http://nexus:8081
       - NEXUS_USERNAME=admin
-      - NEXUS_PASSWORD=Aa1234567
+      - NEXUS_PASSWORD=DevSecOps2024!
       - NEXUS_DOCKER_REGISTRY=nexus:8082
       - GATE_FAIL_ON_CRITICAL=true
       - GATE_FAIL_ON_HIGH=true
@@ -74,7 +74,7 @@ services:
     environment:
       - NEXUS_URL=http://nexus:8081
       - NEXUS_USERNAME=admin
-      - NEXUS_PASSWORD=Aa1234567
+      - NEXUS_PASSWORD=DevSecOps2024!
     depends_on:
       nexus:
         condition: service_healthy
@@ -88,7 +88,7 @@ services:
         echo 'Waiting for Nexus to be fully ready...';
         sleep 30;
         echo 'Creating repositories via API...';
-        curl -u admin:Aa1234567 -X POST 'http://nexus:8081/service/rest/v1/repositories/docker/hosted' \
+        curl -u admin:DevSecOps2024! -X POST 'http://nexus:8081/service/rest/v1/repositories/docker/hosted' \
           -H 'Content-Type: application/json' \
           -d '{
             \"name\": \"docker-local\",
@@ -104,7 +104,7 @@ services:
               \"httpPort\": 8082
             }
           }' || echo 'Docker repo may already exist';
-        curl -u admin:Aa1234567 -X POST 'http://nexus:8081/service/rest/v1/repositories/raw/hosted' \
+        curl -u admin:DevSecOps2024! -X POST 'http://nexus:8081/service/rest/v1/repositories/raw/hosted' \
           -H 'Content-Type: application/json' \
           -d '{
             \"name\": \"raw-hosted\",
@@ -116,7 +116,7 @@ services:
             }
           }' || echo 'Raw repo may already exist';
         echo 'Lab initialization complete!';
-        echo 'Nexus Web UI: http://localhost:8081 (admin/Aa1234567)';
+        echo 'Nexus Web UI: http://localhost:8081 (admin/DevSecOps2024!)';
         echo 'Docker Registry: localhost:8082';
       "
 

@@ -106,7 +106,7 @@ setup_minimal_portable() {
 # Nexus Repository Configuration
 NEXUS_URL=http://localhost:8081
 NEXUS_USERNAME=admin
-NEXUS_PASSWORD=Aa1234567
+NEXUS_PASSWORD=DevSecOps2024!
 
 # Repository Names
 DOCKER_REPO=docker-hosted
@@ -239,7 +239,7 @@ services:
     environment:
       - NEXUS_URL=http://nexus:8081
       - NEXUS_USERNAME=admin
-      - NEXUS_PASSWORD=Aa1234567
+      - NEXUS_PASSWORD=DevSecOps2024!
     depends_on:
       - nexus
     networks:
@@ -270,7 +270,7 @@ run_quick_validation() {
     
     # Test 1: Nexus connectivity
     log_info "Testing Nexus connectivity..."
-    if curl -s -u admin:Aa1234567 "http://localhost:8081/service/rest/v1/status" >/dev/null 2>&1; then
+    if curl -s -u admin:DevSecOps2024! "http://localhost:8081/service/rest/v1/status" >/dev/null 2>&1; then
         test_results+=("✅ Nexus API: Working")
     else
         test_results+=("❌ Nexus API: Failed")
@@ -278,7 +278,7 @@ run_quick_validation() {
     
     # Test 2: Repository availability
     log_info "Testing repositories..."
-    local repos=$(curl -s -u admin:Aa1234567 "http://localhost:8081/service/rest/v1/repositories" 2>/dev/null | jq -r '.[].name' 2>/dev/null | tr '\n' ' ')
+    local repos=$(curl -s -u admin:DevSecOps2024! "http://localhost:8081/service/rest/v1/repositories" 2>/dev/null | jq -r '.[].name' 2>/dev/null | tr '\n' ' ')
     
     if echo "${repos}" | grep -q "docker-local"; then
         test_results+=("✅ Docker repository: Available")
@@ -508,7 +508,7 @@ main() {
     log_success "${BOLD}🎉 DevSecOps Lab Started Successfully! 🎉${NC}"
     echo
     log_info "=== Available Services ==="
-    log_info "🏛️  Nexus Repository: http://localhost:8081 (admin/Aa1234567)"
+    log_info "🏛️  Nexus Repository: http://localhost:8081 (admin/DevSecOps2024!)"
     
     if ${COMPOSE_CMD} ps security-scanner | grep -q "Up" 2>/dev/null; then
         log_info "🔍 Containerized Scanner: docker-compose exec security-scanner bash"

@@ -5,7 +5,7 @@
 # Copy this file to terraform.tfvars and modify values as needed
 
 # Nexus Configuration
-nexus_admin_password = "Aa1234567"
+nexus_admin_password = "DevSecOps2024!"
 nexus_web_port      = 8081
 nexus_registry_port = 8082
 nexus_memory        = 2048

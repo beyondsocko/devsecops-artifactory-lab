@@ -1,11 +1,13 @@
-# 🛡️ DevSecOps Artifactory Lab
+# DevSecOps Artifactory Lab
 
+**Comprehensive DevSecOps Pipeline with Security Scanning & Policy Gates**
+
+> **DEMO PROJECT NOTICE:** This lab uses hardcoded demo credentials (`admin/DevSecOps2024!`) for educational purposes. **NEVER use these credentials in production!** See [SECURITY.md](SECURITY.md) for details.
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](docker-compose.yml)
 [![Security](https://img.shields.io/badge/security-trivy%20%7C%20grype%20%7C%20syft-green.svg)](docker/scanner.Dockerfile)
 [![CI/CD](https://img.shields.io/badge/ci%2Fcd-github%20actions-brightgreen.svg)](.github/workflows/)
 [![DevSecOps](https://img.shields.io/badge/devsecops-ready-orange.svg)](README-PORTABLE.md)
-
 > **Enterprise-grade DevSecOps pipeline demonstrating security-first CI/CD with Nexus Repository, automated vulnerability scanning, and policy-based deployment gates.**
 
 🎯 **Perfect for:** Security engineers, DevOps practitioners, students, and organizations implementing DevSecOps practices
@@ -77,7 +79,7 @@ docker run -d -p 8081:8081 -p 8082:8082 \
   sonatype/nexus3:latest
 
 # Wait for startup (2-3 minutes)
-# Access: http://localhost:8081 (admin/Aa1234567)
+# Access: http://localhost:8081 (admin/DevSecOps2024!)
 ```
 
 ### 3. Test the Pipeline
@@ -193,7 +195,7 @@ GATE_BYPASS_ENABLED: true      # Emergency override
 # Nexus Configuration
 NEXUS_URL=http://localhost:8081
 NEXUS_USERNAME=admin
-NEXUS_PASSWORD=Aa1234567
+NEXUS_PASSWORD=DevSecOps2024!
 NEXUS_DOCKER_REGISTRY=localhost:8082
 
 # Security Gate Policies
@@ -209,7 +211,7 @@ SCANNER_TIMEOUT=300
 ### Terraform Variables (terraform/terraform.tfvars)
 ```hcl
 # Infrastructure Configuration
-nexus_admin_password = "Aa1234567"
+nexus_admin_password = "DevSecOps2024!"
 nexus_web_port      = 8081
 nexus_registry_port = 8082
 nexus_memory        = 2048
@@ -316,7 +318,7 @@ export GATE_BYPASS_REASON="Critical production fix"
 **Nexus Connection Issues**
 ```bash
 # Test connectivity
-curl -u admin:Aa1234567 http://localhost:8081/service/rest/v1/status
+curl -u admin:DevSecOps2024! http://localhost:8081/service/rest/v1/status
 
 # Check container status
 docker logs nexus
@@ -387,7 +389,7 @@ cp .env.example .env
 **Repository Creation Failed**
 ```bash
 # Check Nexus is running
-curl -u admin:Aa1234567 http://localhost:8081/service/rest/v1/status
+curl -u admin:DevSecOps2024! http://localhost:8081/service/rest/v1/status
 
 # Recreate repositories
 ./scripts/api/create-repos.sh

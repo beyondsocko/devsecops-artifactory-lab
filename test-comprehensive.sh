@@ -344,7 +344,7 @@ test_live_services() {
         pass_test "Nexus web interface accessible"
         
         # Test API if web interface works
-        if curl -s -m 5 -u admin:Aa1234567 http://localhost:8081/service/rest/v1/repositories &> /dev/null; then
+        if curl -s -m 5 -u admin:DevSecOps2024! http://localhost:8081/service/rest/v1/repositories &> /dev/null; then
             pass_test "Nexus REST API accessible"
         else
             log_warn "Nexus REST API not responding (may still be initializing)"

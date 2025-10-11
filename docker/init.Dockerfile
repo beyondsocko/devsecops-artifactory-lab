@@ -100,7 +100,7 @@ cat > /app/logs/lab-status.json << EOJ
 EOJ
 
 echo "=== Lab Initialization Complete ==="
-echo "Nexus Web UI: http://localhost:8081 (admin/Aa1234567)"
+echo "Nexus Web UI: http://localhost:8081 (admin/DevSecOps2024!)"
 echo "Docker Registry: localhost:8082"
 echo "Lab Status: /app/logs/lab-status.json"
 EOF
@@ -110,7 +110,7 @@ RUN chmod +x /app/init-lab.sh
 # Set default environment variables
 ENV NEXUS_URL=http://nexus:8081
 ENV NEXUS_USERNAME=admin
-ENV NEXUS_PASSWORD=Aa1234567
+ENV NEXUS_PASSWORD=DevSecOps2024!
 ENV NEXUS_DOCKER_REGISTRY=nexus:8082
 
 # Health check

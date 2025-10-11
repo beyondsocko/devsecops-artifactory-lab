@@ -5,10 +5,19 @@
 ### Demo Credentials
 This lab uses **demo credentials** for educational purposes:
 - **Username:** `admin`
-- **Password:** `Aa1234567`
+- **Password:** `DevSecOps2024!`
 
-⚠️ **IMPORTANT:** These are **demonstration credentials only**. In production:
+🚨 **CRITICAL SECURITY NOTICE:**
+- These are **DEMO CREDENTIALS ONLY** - Never use in production!
+- The password `DevSecOps2024!` appears in 20+ files for lab consistency
+- This is **intentional** for educational/demo purposes
+- **ALWAYS change all credentials** before any production use
+
+⚠️ **PRODUCTION REQUIREMENTS:**
 1. Change all default passwords immediately
+2. Use environment variables or secrets management
+3. Enable proper authentication and authorization
+4. Review all configuration files for hardcoded secrets
 2. Use strong, unique passwords
 3. Enable multi-factor authentication
 4. Use secrets management systems

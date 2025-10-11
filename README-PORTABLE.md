@@ -18,7 +18,7 @@ cd devsecops-artifactory-lab
 ## 📋 What You Get Instantly
 
 ### Core Services
-- **Nexus Repository OSS** - http://localhost:8081 (admin/Aa1234567)
+- **Nexus Repository OSS** - http://localhost:8081 (admin/DevSecOps2024!)
 - **Docker Registry** - localhost:8082 (for container images)
 - **Security Tools** - Trivy, Grype, Syft (containerized or local)
 - **Policy Gates** - Automated security decision engine
@@ -37,7 +37,7 @@ cd devsecops-artifactory-lab
 docker-compose ps
 
 # Test Nexus
-curl -u admin:Aa1234567 http://localhost:8081/service/rest/v1/status
+curl -u admin:DevSecOps2024! http://localhost:8081/service/rest/v1/status
 ```
 
 ### 2. Run Security Scan
@@ -250,7 +250,7 @@ cd devsecops-artifactory-lab
 ./quick-start.sh
 
 # Access your lab
-# Nexus: http://localhost:8081 (admin/Aa1234567)
+# Nexus: http://localhost:8081 (admin/DevSecOps2024!)
 # Documentation: All files in docs/ directory
 # Reports: Generated in reports/ directory
 ```

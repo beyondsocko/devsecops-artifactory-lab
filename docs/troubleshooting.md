@@ -78,7 +78,7 @@ docker logs -f nexus
 **Solutions:**
 ```bash
 # Test basic authentication
-curl -u admin:Aa1234567 http://localhost:8081/service/rest/v1/status
+curl -u admin:DevSecOps2024! http://localhost:8081/service/rest/v1/status
 
 # Reset admin password if needed
 docker exec -it nexus cat /nexus-data/admin.password
@@ -95,7 +95,7 @@ nano .env
 **Solutions:**
 ```bash
 # Check if repositories already exist
-curl -u admin:Aa1234567 \
+curl -u admin:DevSecOps2024! \
   http://localhost:8081/service/rest/v1/repositories
 
 # Force recreation
@@ -374,13 +374,13 @@ docker run --network host sonatype/nexus3:latest
 **Solutions:**
 ```bash
 # Test Docker registry connectivity
-curl -u admin:Aa1234567 http://localhost:8082/v2/_catalog
+curl -u admin:DevSecOps2024! http://localhost:8082/v2/_catalog
 
 # Login to Docker registry
-echo "Aa1234567" | docker login localhost:8082 -u admin --password-stdin
+echo "DevSecOps2024!" | docker login localhost:8082 -u admin --password-stdin
 
 # Check repository exists
-curl -u admin:Aa1234567 \
+curl -u admin:DevSecOps2024! \
   http://localhost:8081/service/rest/v1/repositories | \
   jq '.[] | select(.name == "docker-local")'
 
