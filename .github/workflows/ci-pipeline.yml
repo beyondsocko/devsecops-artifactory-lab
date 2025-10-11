@@ -119,7 +119,7 @@ jobs:
           --label "security.scan.required=true" \
           --label "security.gate.required=true" \
           --tag "${IMAGE_TAG}" \
-          .  # Build context is project root (Dockerfile expects src/ directory)
+          ./src  # Build context is src directory (matches local CI scripts)
           
         # Get image digest
         IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE_TAG}" || echo "local-build")
