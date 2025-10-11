@@ -61,8 +61,8 @@ RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
-# Copy package files from src directory
-COPY --chown=nodejs:nodejs src/package*.json ./
+# Copy package files (build context is src directory)
+COPY --chown=nodejs:nodejs package*.json ./
 RUN npm install --only=production && npm cache clean --force
 
 # Copy application code from builder stage
