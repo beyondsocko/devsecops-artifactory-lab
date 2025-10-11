@@ -61,12 +61,13 @@ RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
-# Copy package files (build context is src directory)
+# Copy application files from builder stage (before installing deps)
+COPY --from=builder --chown=nodejs:nodejs /app/server.js ./
+COPY --from=builder --chown=nodejs:nodejs /app/app.js ./
+
+# Copy package files and install production dependencies
 COPY --chown=nodejs:nodejs package*.json ./
 RUN npm install --only=production && npm cache clean --force
-
-# Copy all application files from builder stage
-COPY --from=builder --chown=nodejs:nodejs /app/*.js ./
 
 # Create directories
 RUN mkdir -p logs && chmod 755 logs
