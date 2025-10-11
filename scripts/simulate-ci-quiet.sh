@@ -67,7 +67,7 @@ if [ -f "${PROJECT_ROOT}/src/Dockerfile" ]; then
         --build-arg VERSION="${APP_VERSION}" \
         --tag "${IMAGE_TAG}" \
         --quiet \
-        "${PROJECT_ROOT}" > /dev/null 2>&1; then
+        "${PROJECT_ROOT}/src" > /dev/null 2>&1; then
         echo "  ✅ Container built successfully"
     else
         echo "  ❌ Container build failed"

@@ -88,7 +88,7 @@ if [ -f "${PROJECT_ROOT}/src/Dockerfile" ]; then
         --label "security.scan.required=true" \
         --tag "${IMAGE_TAG}" \
         --quiet \
-        "${PROJECT_ROOT}" > /dev/null
+        "${PROJECT_ROOT}/src" > /dev/null
         
     if [ $? -eq 0 ]; then
         log_success "Container built: ${IMAGE_TAG}"
@@ -97,8 +97,8 @@ if [ -f "${PROJECT_ROOT}/src/Dockerfile" ]; then
         log_info "Debug information:"
         log_info "  - Project root: ${PROJECT_ROOT}"
         log_info "  - Dockerfile location: ${PROJECT_ROOT}/src/Dockerfile"
-        log_info "  - Build context: ${PROJECT_ROOT}"
-        log_info "  - Expected src/ directory in build context"
+        log_info "  - Build context: ${PROJECT_ROOT}/src"
+        log_info "  - Expected package.json and *.js files in build context"
         
         # Check if src directory exists in build context
         if [ -d "${PROJECT_ROOT}/src" ]; then
@@ -169,6 +169,7 @@ if [ -f "${PROJECT_ROOT}/scripts/security/policy-gate.sh" ]; then
     chmod +x "${PROJECT_ROOT}/scripts/security/policy-gate.sh"
     
     if "${PROJECT_ROOT}/scripts/security/policy-gate.sh" -s trivy; then
+  
         GATE_STATUS="PASS"
         log_success "Security gate PASSED"
     else
