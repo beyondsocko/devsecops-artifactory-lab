@@ -1,29 +1,5 @@
-# Multi-stage production Dockerfile
-FROM ubuntu:22.04 AS builder
-
-LABEL stage="builder"
-LABEL description="DevSecOps Lab - Build Stage"
-
-# Install Node.js 18
-RUN apt-get update && \
-    apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# Copy package files (build context is src directory)
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install --only=production
-
-# Copy source code (build context is src directory)
-COPY . .
-
-# Production stage
-FROM ubuntu:22.04 AS production
+# Single-stage production Dockerfile
+FROM ubuntu:22.04
 
 # Install Node.js 18
 RUN apt-get update && \
@@ -61,13 +37,12 @@ RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
-# Copy application files from builder stage (before installing deps)
-COPY --from=builder --chown=nodejs:nodejs /app/server.js ./
-COPY --from=builder --chown=nodejs:nodejs /app/app.js ./
-
 # Copy package files and install production dependencies
 COPY --chown=nodejs:nodejs package*.json ./
 RUN npm install --only=production && npm cache clean --force
+
+# Copy application files
+COPY --chown=nodejs:nodejs *.js ./
 
 # Create directories
 RUN mkdir -p logs && chmod 755 logs
