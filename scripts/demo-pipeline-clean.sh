@@ -67,7 +67,7 @@ if docker build \
     --file "${PROJECT_ROOT}/src/Dockerfile" \
     --tag "${IMAGE_TAG}" \
     --quiet \
-    "${PROJECT_ROOT}" > /dev/null 2>&1; then
+    "${PROJECT_ROOT}/src" > /dev/null 2>&1; then
     echo "   ✅ Container built successfully"
 else
     echo "   ❌ Container build failed"
