@@ -11,7 +11,7 @@ yarn-error.log*
 .node_repl_history
 
 # Docker
-.dockerignore
+# .dockerignore - commented out to allow essential build context files
 
 # Environment files (keep .env.example)
 .env
