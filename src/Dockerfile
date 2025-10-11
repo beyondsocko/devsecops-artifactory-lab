@@ -13,14 +13,14 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy package files from src directory
-COPY src/package*.json ./
+# Copy package files (build context is src directory)
+COPY package*.json ./
 
 # Install dependencies
 RUN npm install --only=production
 
-# Copy source code from src directory
-COPY src/ .
+# Copy source code (build context is src directory)
+COPY . .
 
 # Production stage
 FROM ubuntu:22.04 AS production
