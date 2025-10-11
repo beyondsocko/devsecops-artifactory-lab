@@ -65,8 +65,8 @@ USER nodejs
 COPY --chown=nodejs:nodejs package*.json ./
 RUN npm install --only=production && npm cache clean --force
 
-# Copy application code from builder stage
-COPY --from=builder --chown=nodejs:nodejs /app/server.js ./
+# Copy all application files from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/*.js ./
 
 # Create directories
 RUN mkdir -p logs && chmod 755 logs
