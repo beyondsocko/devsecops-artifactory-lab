@@ -121,11 +121,11 @@ jobs:
           --tag "${IMAGE_TAG}" \
           ./src  # Build context is src directory (matches local CI scripts)
           
-        # Get image digest
-        IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE_TAG}" || echo "local-build")
+        # Get image digest (use image ID for local builds)
+        IMAGE_DIGEST=$(docker inspect --format='{{.Id}}' "${IMAGE_TAG}" 2>/dev/null || echo "local-build")
         
-        echo "image-tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-        echo "image-digest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
+        echo "image-tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+        echo "image-digest=${IMAGE_DIGEST}" >> "$GITHUB_OUTPUT"
         echo "Built image: ${IMAGE_TAG}"
         
     - name: Save Image Artifact
